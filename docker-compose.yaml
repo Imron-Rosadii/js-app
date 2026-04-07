@@ -1,0 +1,63 @@
+services:
+  # Database PostgreSQL
+  database:
+    image: postgres:15-alpine
+    container_name: app-database
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Express Backend
+  backend:
+    build: ./express-backend
+    container_name: app-backend
+    ports:
+      - "8000:8000" # ✅ Ubah ke port 8000
+    environment:
+      - NODE_ENV=production
+      - PORT=8000 # ✅ Ubah ke 8000
+      - DATABASE_URL=postgresql://postgres:root@database:5432/auth_db?schema=public
+      - JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
+      - JWT_REFRESH_SECRET="your-refresh-secret-key-change-this"
+      - CORS_ORIGIN=http://localhost,http://localhost:80,http://localhost:5173,http://localhost:8000
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # React Frontend
+  frontend:
+    build: ./react-frontend
+    container_name: app-frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000 # ✅ Frontend akan panggil backend di port 8000
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
