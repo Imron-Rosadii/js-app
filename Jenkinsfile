@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         // Docker registry configuration
-        DOCKER_REGISTRY = 'docker.io/yourusername'  // Ganti dengan username Docker Hub Anda
+        DOCKER_REGISTRY = 'imronrosadii'  // Ganti dengan username Docker Hub Anda
         IMAGE_TAG = "${BUILD_NUMBER}"
         
         // Kubernetes configuration
