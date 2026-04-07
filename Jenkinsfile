@@ -11,7 +11,7 @@ pipeline {
     }
     
     tools {
-        nodejs 'NodeJS-18'  // Pastikan NodeJS plugin terinstall
+        nodejs 'NodeJS-22'  // Pastikan NodeJS plugin terinstall
     }
     
     stages {
