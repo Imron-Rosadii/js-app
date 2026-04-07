@@ -2,16 +2,13 @@ pipeline {
     agent any
     
     environment {
-        // Docker registry configuration
-        DOCKER_REGISTRY = 'imronrosadii'  // Ganti dengan username Docker Hub Anda
+        DOCKER_REGISTRY = 'imronrosadii'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        
-        // Kubernetes configuration
         KUBECONFIG_CREDENTIAL = 'kubeconfig'
     }
     
     tools {
-        nodejs 'NodeJS-22'  // Pastikan NodeJS plugin terinstall
+        nodejs 'NodeJS-22'
     }
     
     stages {
@@ -131,7 +128,6 @@ pipeline {
                         """
                     } catch (err) {
                         echo "Deployment to dev failed: ${err}"
-                        // Don't fail the pipeline for dev deployment issues
                     }
                 }
             }
@@ -140,7 +136,10 @@ pipeline {
         stage('Deploy to Staging') {
             when {
                 branch 'main'
-                input message: 'Deploy to Staging?', ok: 'Deploy'
+            }
+            input {
+                message 'Deploy to Staging?'
+                ok 'Deploy'
             }
             steps {
                 script {
@@ -159,7 +158,10 @@ pipeline {
         stage('Deploy to Production') {
             when {
                 branch 'main'
-                input message: 'Deploy to Production?', ok: 'Deploy'
+            }
+            input {
+                message 'Deploy to Production?'
+                ok 'Deploy'
             }
             steps {
                 script {
