@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: production
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+patchesStrategicMerge:
+  - patch.yaml
+
+# Image akan di-update oleh Jenkins pipeline
+# Jangan hardcode tag di sini
+images:
+  - name: express-backend
+    newName: imronrosadii/express-backend
+    newTag: latest # Akan di-replace oleh Jenkins
+  - name: react-frontend
+    newName: imronrosadii/react-frontend
+    newTag: latest # Akan di-replace oleh Jenkins
+
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+      - CORS_ORIGIN=https://example.com,https://api.example.com
