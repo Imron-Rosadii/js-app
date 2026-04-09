@@ -5,10 +5,6 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
     
-    tools {
-        nodejs 'NodeJS-22'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -36,7 +32,7 @@ pipeline {
             }
         }
         
-        stage('TypeScript Compile Check') {
+        stage('TypeScript Compile') {
             parallel {
                 stage('Backend Build') {
                     steps {
@@ -61,8 +57,8 @@ pipeline {
                     steps {
                         dir('express-backend') {
                             bat """
-                                docker build -t express-backend:${IMAGE_TAG} .
-                                docker tag express-backend:${IMAGE_TAG} express-backend:latest
+                                docker build -t express-backend:%IMAGE_TAG% .
+                                docker tag express-backend:%IMAGE_TAG% express-backend:latest
                             """
                         }
                     }
@@ -71,8 +67,8 @@ pipeline {
                     steps {
                         dir('react-frontend') {
                             bat """
-                                docker build -t react-frontend:${IMAGE_TAG} .
-                                docker tag react-frontend:${IMAGE_TAG} react-frontend:latest
+                                docker build -t react-frontend:%IMAGE_TAG% .
+                                docker tag react-frontend:%IMAGE_TAG% react-frontend:latest
                             """
                         }
                     }
@@ -83,7 +79,7 @@ pipeline {
         stage('Load Images to Minikube') {
             steps {
                 bat '''
-                    echo "📦 Loading images to Minikube..."
+                    echo Loading images to Minikube...
                     minikube image load express-backend:latest
                     minikube image load react-frontend:latest
                 '''
@@ -91,72 +87,53 @@ pipeline {
         }
         
         stage('Deploy to Development') {
-            when {
-                branch 'main'
-            }
             steps {
-                script {
-                    try {
-                        bat '''
-                            echo "🚀 Deploy to Development..."
-                            kubectl apply -k k8s/overlays/dev
-                            kubectl rollout status -n dev deployment/backend --timeout=5m
-                            kubectl rollout status -n dev deployment/frontend --timeout=5m
-                        '''
-                    } catch (err) {
-                        echo "Deployment to dev failed: ${err}"
-                    }
-                }
+                bat '''
+                    echo Deploying to Development...
+                    kubectl apply -k k8s/overlays/dev
+                    kubectl rollout status -n dev deployment/backend --timeout=5m
+                    kubectl rollout status -n dev deployment/frontend --timeout=5m
+                '''
             }
         }
         
         stage('Deploy to Staging') {
-            when {
-                branch 'main'
-            }
             input {
                 message 'Deploy to Staging?'
                 ok 'Deploy'
             }
             steps {
-                script {
-                    bat '''
-                        echo "🚀 Deploy to Staging..."
-                        kubectl apply -k k8s/overlays/staging
-                        kubectl rollout status -n staging deployment/backend --timeout=5m
-                        kubectl rollout status -n staging deployment/frontend --timeout=5m
-                    '''
-                }
+                bat '''
+                    echo Deploying to Staging...
+                    kubectl apply -k k8s/overlays/staging
+                    kubectl rollout status -n staging deployment/backend --timeout=5m
+                    kubectl rollout status -n staging deployment/frontend --timeout=5m
+                '''
             }
         }
         
         stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
             input {
                 message 'Deploy to Production?'
                 ok 'Deploy'
             }
             steps {
-                script {
-                    bat '''
-                        echo "🚀 Deploy to Production..."
-                        kubectl apply -k k8s/overlays/production
-                        kubectl rollout status -n production deployment/backend --timeout=5m
-                        kubectl rollout status -n production deployment/frontend --timeout=5m
-                    '''
-                }
+                bat '''
+                    echo Deploying to Production...
+                    kubectl apply -k k8s/overlays/production
+                    kubectl rollout status -n production deployment/backend --timeout=5m
+                    kubectl rollout status -n production deployment/frontend --timeout=5m
+                '''
             }
         }
     }
     
     post {
         success {
-            echo "✅ Pipeline succeeded! Image tag: ${IMAGE_TAG}"
+            echo "✅ Pipeline SUCCESS! Image Tag: ${IMAGE_TAG}"
         }
         failure {
-            echo "❌ Pipeline failed!"
+            echo "❌ Pipeline FAILED!"
         }
         always {
             cleanWs()
