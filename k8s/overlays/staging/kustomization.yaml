@@ -10,14 +10,6 @@ resources:
 patchesStrategicMerge:
   - patch.yaml
 
-images:
-  - name: express-backend
-    newName: imronrosadii/express-backend
-    newTag: staging
-  - name: react-frontend
-    newName: imronrosadii/react-frontend
-    newTag: staging
-
 configMapGenerator:
   - name: app-config
     behavior: merge

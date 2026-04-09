@@ -4,4 +4,4 @@ metadata:
   name: staging
   labels:
     environment: staging
-    name: staging
+    pod-security.kubernetes.io/enforce: baseline

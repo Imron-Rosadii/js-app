@@ -2,9 +2,9 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = 'imronrosadii'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        KUBECONFIG_CREDENTIAL = 'kubeconfig'
+        // HAPUS DOCKER_REGISTRY karena pakai lokal
+        // HAPUS KUBECONFIG_CREDENTIAL (pakai default)
     }
     
     tools {
@@ -63,8 +63,8 @@ pipeline {
                     steps {
                         dir('express-backend') {
                             sh """
-                                docker build -t ${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG} .
-                                docker tag ${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG} ${DOCKER_REGISTRY}/express-backend:latest
+                                docker build -t express-backend:${IMAGE_TAG} .
+                                docker tag express-backend:${IMAGE_TAG} express-backend:latest
                             """
                         }
                     }
@@ -73,8 +73,8 @@ pipeline {
                     steps {
                         dir('react-frontend') {
                             sh """
-                                docker build -t ${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG} .
-                                docker tag ${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG} ${DOCKER_REGISTRY}/react-frontend:latest
+                                docker build -t react-frontend:${IMAGE_TAG} .
+                                docker tag react-frontend:${IMAGE_TAG} react-frontend:latest
                             """
                         }
                     }
@@ -82,32 +82,16 @@ pipeline {
             }
         }
         
-        stage('Push to Docker Registry') {
-            parallel {
-                stage('Push Backend') {
-                    steps {
-                        script {
-                            docker.withRegistry('', 'docker-hub-credentials') {
-                                sh """
-                                    docker push ${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG}
-                                    docker push ${DOCKER_REGISTRY}/express-backend:latest
-                                """
-                            }
-                        }
-                    }
-                }
-                stage('Push Frontend') {
-                    steps {
-                        script {
-                            docker.withRegistry('', 'docker-hub-credentials') {
-                                sh """
-                                    docker push ${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG}
-                                    docker push ${DOCKER_REGISTRY}/react-frontend:latest
-                                """
-                            }
-                        }
-                    }
-                }
+        // ========== HAPUS STAGE PUSH (tidak perlu) ==========
+        // stage('Push to Docker Registry') { ... HAPUS ... }
+        
+        stage('Load Images to Minikube') {
+            steps {
+                sh """
+                    echo "📦 Loading images to Minikube..."
+                    minikube image load express-backend:latest
+                    minikube image load react-frontend:latest
+                """
             }
         }
         
@@ -119,10 +103,8 @@ pipeline {
                 script {
                     try {
                         sh """
-                            kubectl set image -n dev deployment/backend \
-                                express-backend=${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG} --record
-                            kubectl set image -n dev deployment/frontend \
-                                react-frontend=${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG} --record
+                            echo "🚀 Deploy to Development..."
+                            kubectl apply -k k8s/overlays/dev
                             kubectl rollout status -n dev deployment/backend --timeout=5m
                             kubectl rollout status -n dev deployment/frontend --timeout=5m
                         """
@@ -144,10 +126,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl set image -n staging deployment/backend \
-                            express-backend=${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG} --record
-                        kubectl set image -n staging deployment/frontend \
-                            react-frontend=${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG} --record
+                        echo "🚀 Deploy to Staging..."
+                        kubectl apply -k k8s/overlays/staging
                         kubectl rollout status -n staging deployment/backend --timeout=5m
                         kubectl rollout status -n staging deployment/frontend --timeout=5m
                     """
@@ -166,10 +146,8 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl set image -n production deployment/backend \
-                            express-backend=${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG} --record
-                        kubectl set image -n production deployment/frontend \
-                            react-frontend=${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG} --record
+                        echo "🚀 Deploy to Production..."
+                        kubectl apply -k k8s/overlays/production
                         kubectl rollout status -n production deployment/backend --timeout=5m
                         kubectl rollout status -n production deployment/frontend --timeout=5m
                     """
@@ -180,10 +158,10 @@ pipeline {
     
     post {
         success {
-            echo "Pipeline succeeded! Image tag: ${IMAGE_TAG}"
+            echo "✅ Pipeline succeeded! Image tag: ${IMAGE_TAG}"
         }
         failure {
-            echo "Pipeline failed!"
+            echo "❌ Pipeline failed!"
         }
         always {
             cleanWs()

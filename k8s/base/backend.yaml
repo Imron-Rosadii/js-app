@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend # ← Hapus namespace dari sini
+  name: backend
   labels:
     app: backend
     tier: api
@@ -33,7 +33,7 @@ spec:
       containers:
         - name: express-backend
           image: express-backend:latest # placeholder
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

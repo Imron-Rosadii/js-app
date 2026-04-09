@@ -4,5 +4,4 @@ metadata:
   name: production
   labels:
     environment: production
-    name: production
-    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce: privileged

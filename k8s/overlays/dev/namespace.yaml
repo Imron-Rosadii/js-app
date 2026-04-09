@@ -4,4 +4,4 @@ metadata:
   name: dev
   labels:
     environment: development
-    name: dev
+    pod-security.kubernetes.io/enforce: privileged

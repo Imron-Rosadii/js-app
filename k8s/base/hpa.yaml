@@ -7,12 +7,18 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: backend
-  minReplicas: 1
-  maxReplicas: 2
+  minReplicas: 3 # Minimal 3 untuk HA
+  maxReplicas: 10 # Maksimal 10
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 50
+          averageUtilization: 70 # Scale saat CPU > 70%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80 # Scale saat memory > 80%

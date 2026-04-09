@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - configmap.yaml
-  - secret.yaml
+  - secret.yaml # ← Pakai file secret.yaml langsung
   - database.yaml
   - backend.yaml
   - frontend.yaml
@@ -23,10 +23,11 @@ configMapGenerator:
       - API_VERSION=v1
       - LOG_FORMAT=json
 
-secretGenerator:
-  - name: app-secret
-    behavior: replace
-    literals:
-      - JWT_SECRET=base64-encoded-secret-change-me
-    options:
-      disableNameSuffixHash: true
+# Hapus atau comment secretGenerator
+# secretGenerator:
+#   - name: app-secret
+#     behavior: replace
+#     literals:
+#       - JWT_SECRET=base64-encoded-secret-change-me
+#     options:
+#       disableNameSuffixHash: true
