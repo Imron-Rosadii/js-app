@@ -3,8 +3,6 @@ pipeline {
     
     environment {
         IMAGE_TAG = "${BUILD_NUMBER}"
-        // HAPUS DOCKER_REGISTRY karena pakai lokal
-        // HAPUS KUBECONFIG_CREDENTIAL (pakai default)
     }
     
     tools {
@@ -24,14 +22,14 @@ pipeline {
                 stage('Backend Dependencies') {
                     steps {
                         dir('express-backend') {
-                            sh 'npm ci'
+                            bat 'npm ci'
                         }
                     }
                 }
                 stage('Frontend Dependencies') {
                     steps {
                         dir('react-frontend') {
-                            sh 'npm ci'
+                            bat 'npm ci'
                         }
                     }
                 }
@@ -43,14 +41,14 @@ pipeline {
                 stage('Backend Build') {
                     steps {
                         dir('express-backend') {
-                            sh 'npm run build'
+                            bat 'npm run build'
                         }
                     }
                 }
                 stage('Frontend Build') {
                     steps {
                         dir('react-frontend') {
-                            sh 'npm run build'
+                            bat 'npm run build'
                         }
                     }
                 }
@@ -62,7 +60,7 @@ pipeline {
                 stage('Build Backend Image') {
                     steps {
                         dir('express-backend') {
-                            sh """
+                            bat """
                                 docker build -t express-backend:${IMAGE_TAG} .
                                 docker tag express-backend:${IMAGE_TAG} express-backend:latest
                             """
@@ -72,7 +70,7 @@ pipeline {
                 stage('Build Frontend Image') {
                     steps {
                         dir('react-frontend') {
-                            sh """
+                            bat """
                                 docker build -t react-frontend:${IMAGE_TAG} .
                                 docker tag react-frontend:${IMAGE_TAG} react-frontend:latest
                             """
@@ -82,16 +80,13 @@ pipeline {
             }
         }
         
-        // ========== HAPUS STAGE PUSH (tidak perlu) ==========
-        // stage('Push to Docker Registry') { ... HAPUS ... }
-        
         stage('Load Images to Minikube') {
             steps {
-                sh """
-                   echo "📦 Loading images to Minikube..."
-                     minikube image load express-backend:latest
-                     minikube image load react-frontend:latest
-                 """
+                bat '''
+                    echo "📦 Loading images to Minikube..."
+                    minikube image load express-backend:latest
+                    minikube image load react-frontend:latest
+                '''
             }
         }
         
@@ -102,12 +97,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh """
+                        bat '''
                             echo "🚀 Deploy to Development..."
                             kubectl apply -k k8s/overlays/dev
                             kubectl rollout status -n dev deployment/backend --timeout=5m
                             kubectl rollout status -n dev deployment/frontend --timeout=5m
-                        """
+                        '''
                     } catch (err) {
                         echo "Deployment to dev failed: ${err}"
                     }
@@ -125,12 +120,12 @@ pipeline {
             }
             steps {
                 script {
-                    sh """
+                    bat '''
                         echo "🚀 Deploy to Staging..."
                         kubectl apply -k k8s/overlays/staging
                         kubectl rollout status -n staging deployment/backend --timeout=5m
                         kubectl rollout status -n staging deployment/frontend --timeout=5m
-                    """
+                    '''
                 }
             }
         }
@@ -145,12 +140,12 @@ pipeline {
             }
             steps {
                 script {
-                    sh """
+                    bat '''
                         echo "🚀 Deploy to Production..."
                         kubectl apply -k k8s/overlays/production
                         kubectl rollout status -n production deployment/backend --timeout=5m
                         kubectl rollout status -n production deployment/frontend --timeout=5m
-                    """
+                    '''
                 }
             }
         }
