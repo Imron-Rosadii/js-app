@@ -88,10 +88,10 @@ pipeline {
         stage('Load Images to Minikube') {
             steps {
                 sh """
-                  echo "📦 Loading images to Minikube..."
-            "C:/Program Files/Minikube/minikube.exe" image load express-backend:latest
-            "C:/Program Files/Minikube/minikube.exe" image load react-frontend:latest
-                """
+                   echo "📦 Loading images to Minikube..."
+                     minikube image load express-backend:latest
+                     minikube image load react-frontend:latest
+                 """
             }
         }
         
