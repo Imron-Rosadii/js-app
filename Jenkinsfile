@@ -2,10 +2,11 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_REGISTRY = 'imronrosadii'  // Docker Hub username
+        DOCKER_REGISTRY = 'imronrosadii'
         IMAGE_TAG = "${BUILD_NUMBER}"
         IMAGE_BACKEND = "${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG}"
         IMAGE_FRONTEND = "${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG}"
+        DOCKER_PASS = credentials('docker-hub-credentials')
     }
     
     stages {
@@ -83,26 +84,22 @@ pipeline {
             parallel {
                 stage('Push Backend') {
                     steps {
-                        script {
-                            docker.withRegistry('', 'docker-hub-credentials') {
-                                bat """
-                                    docker push ${IMAGE_BACKEND}
-                                    docker push ${DOCKER_REGISTRY}/express-backend:latest
-                                """
-                            }
-                        }
+                        bat """
+                            echo ${env.DOCKER_PASS_PSW} | docker login -u imronrosadii --password-stdin
+                            docker push ${IMAGE_BACKEND}
+                            docker push ${DOCKER_REGISTRY}/express-backend:latest
+                            docker logout
+                        """
                     }
                 }
                 stage('Push Frontend') {
                     steps {
-                        script {
-                            docker.withRegistry('', 'docker-hub-credentials') {
-                                bat """
-                                    docker push ${IMAGE_FRONTEND}
-                                    docker push ${DOCKER_REGISTRY}/react-frontend:latest
-                                """
-                            }
-                        }
+                        bat """
+                            echo ${env.DOCKER_PASS_PSW} | docker login -u imronrosadii --password-stdin
+                            docker push ${IMAGE_FRONTEND}
+                            docker push ${DOCKER_REGISTRY}/react-frontend:latest
+                            docker logout
+                        """
                     }
                 }
             }
