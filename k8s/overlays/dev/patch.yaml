@@ -9,6 +9,7 @@ spec:
     spec:
       containers:
         - name: express-backend
+          image: imronrosadii/express-backend:latest
           imagePullPolicy: Always
           env:
             - name: NODE_ENV
@@ -32,6 +33,7 @@ spec:
     spec:
       containers:
         - name: react-frontend
+          image: imronrosadii/react-frontend:latest
           imagePullPolicy: Always
           env:
             - name: VITE_API_URL
