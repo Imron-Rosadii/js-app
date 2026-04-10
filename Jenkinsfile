@@ -2,7 +2,10 @@ pipeline {
     agent any
     
     environment {
+        DOCKER_REGISTRY = 'imronrosadii'  // Docker Hub username
         IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_BACKEND = "${DOCKER_REGISTRY}/express-backend:${IMAGE_TAG}"
+        IMAGE_FRONTEND = "${DOCKER_REGISTRY}/react-frontend:${IMAGE_TAG}"
     }
     
     stages {
@@ -57,8 +60,8 @@ pipeline {
                     steps {
                         dir('express-backend') {
                             bat """
-                                docker build -t express-backend:%IMAGE_TAG% .
-                                docker tag express-backend:%IMAGE_TAG% express-backend:latest
+                                docker build -t ${IMAGE_BACKEND} .
+                                docker tag ${IMAGE_BACKEND} ${DOCKER_REGISTRY}/express-backend:latest
                             """
                         }
                     }
@@ -67,8 +70,8 @@ pipeline {
                     steps {
                         dir('react-frontend') {
                             bat """
-                                docker build -t react-frontend:%IMAGE_TAG% .
-                                docker tag react-frontend:%IMAGE_TAG% react-frontend:latest
+                                docker build -t ${IMAGE_FRONTEND} .
+                                docker tag ${IMAGE_FRONTEND} ${DOCKER_REGISTRY}/react-frontend:latest
                             """
                         }
                     }
@@ -76,24 +79,44 @@ pipeline {
             }
         }
         
-        stage('Load Images to Minikube') {
-            steps {
-                bat '''
-                    echo Loading images to Minikube...
-                    minikube image load express-backend:latest
-                    minikube image load react-frontend:latest
-                '''
+        stage('Push to Docker Registry') {
+            parallel {
+                stage('Push Backend') {
+                    steps {
+                        script {
+                            docker.withRegistry('', 'docker-hub-credentials') {
+                                bat """
+                                    docker push ${IMAGE_BACKEND}
+                                    docker push ${DOCKER_REGISTRY}/express-backend:latest
+                                """
+                            }
+                        }
+                    }
+                }
+                stage('Push Frontend') {
+                    steps {
+                        script {
+                            docker.withRegistry('', 'docker-hub-credentials') {
+                                bat """
+                                    docker push ${IMAGE_FRONTEND}
+                                    docker push ${DOCKER_REGISTRY}/react-frontend:latest
+                                """
+                            }
+                        }
+                    }
+                }
             }
         }
         
         stage('Deploy to Development') {
             steps {
-                bat '''
+                bat """
                     echo Deploying to Development...
-                    kubectl apply -k k8s/overlays/dev
+                    kubectl set image -n dev deployment/backend express-backend=${IMAGE_BACKEND}
+                    kubectl set image -n dev deployment/frontend react-frontend=${IMAGE_FRONTEND}
                     kubectl rollout status -n dev deployment/backend --timeout=5m
                     kubectl rollout status -n dev deployment/frontend --timeout=5m
-                '''
+                """
             }
         }
         
@@ -103,12 +126,13 @@ pipeline {
                 ok 'Deploy'
             }
             steps {
-                bat '''
+                bat """
                     echo Deploying to Staging...
-                    kubectl apply -k k8s/overlays/staging
+                    kubectl set image -n staging deployment/backend express-backend=${IMAGE_BACKEND}
+                    kubectl set image -n staging deployment/frontend react-frontend=${IMAGE_FRONTEND}
                     kubectl rollout status -n staging deployment/backend --timeout=5m
                     kubectl rollout status -n staging deployment/frontend --timeout=5m
-                '''
+                """
             }
         }
         
@@ -116,14 +140,16 @@ pipeline {
             input {
                 message 'Deploy to Production?'
                 ok 'Deploy'
+                submitter 'admin'
             }
             steps {
-                bat '''
+                bat """
                     echo Deploying to Production...
-                    kubectl apply -k k8s/overlays/production
+                    kubectl set image -n production deployment/backend express-backend=${IMAGE_BACKEND}
+                    kubectl set image -n production deployment/frontend react-frontend=${IMAGE_FRONTEND}
                     kubectl rollout status -n production deployment/backend --timeout=5m
                     kubectl rollout status -n production deployment/frontend --timeout=5m
-                '''
+                """
             }
         }
     }

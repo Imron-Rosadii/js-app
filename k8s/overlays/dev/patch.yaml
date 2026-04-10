@@ -9,7 +9,7 @@ spec:
     spec:
       containers:
         - name: express-backend
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           env:
             - name: NODE_ENV
               value: development
@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: react-frontend
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           env:
             - name: VITE_API_URL
               value: "http://backend:8000"
